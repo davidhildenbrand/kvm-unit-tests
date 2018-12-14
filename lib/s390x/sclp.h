@@ -76,6 +76,8 @@
 #define SCLP_EVENT_BUFFER_ACCEPTED              0x80
 
 #define SCLP_FC_NORMAL_WRITE                    0
+#define SCLP_FC_SINGLE_INCREMENT_ASSIGN         0x40
+#define SCLP_FC_DUMP_INDICATOR                  0x80
 
 typedef struct SCCBHeader {
     uint16_t length;
