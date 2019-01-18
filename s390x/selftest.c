@@ -29,6 +29,77 @@ static void test_fp(void)
 	report("3.0/2.0 == 1.5", c == 1.5);
 }
 
+static double fidbra(double src, uint8_t m3, uint8_t m4)
+{
+        double ret;
+
+        asm volatile(" .machine z13\n"
+                     " fidbra %0, %2, %1, %3\n"
+                : "=f" (ret)
+                : "f" (src),
+                  "i" (m3),
+                  "i" (m4));
+        return ret;
+}
+
+static float fiebra(float src, uint8_t m3, uint8_t m4)
+{
+        float ret;
+
+        asm volatile(" .machine z13\n"
+                     "  fiebra %0, %2, %1, %3\n"
+                : "=f" (ret)
+                : "f" (src),
+                  "i" (m3),
+                  "i" (m4));
+
+        return ret;
+}
+
+static double fixbra(double src, uint8_t m3, uint8_t m4)
+{
+	double ret;
+	
+	/* convert it to float128 and back */
+	asm volatile(" .machine z13\n"
+	             "  lxdb %%f0, %1\n"
+	             "  fixbra %%f0, %2, %%f0, %3\n"
+	             "  ldxbra %%f0, 0, %%f0, 0\n"
+	             "  std %%f0, %0\n"
+	        : "=Q" (ret)
+	        : "Q" (src),
+	          "i" (m3),
+	          "i" (m4)
+	        : "f0", "f1", "memory");
+	
+	return ret;
+}
+
+static void test_fp_rounding(void)
+{
+	report("fidbra(0.5) == 0 with RTZ", fidbra(0.5, 5, 0) == 0);
+	report("fidbra(0.5) == 1 with RSP", fidbra(0.5, 3, 0) == 1);
+	report("fidbra(-0.5) == -1 with RSP", fidbra(-0.5, 3, 0) == -1);
+	report("fidbra(9.5) == 9 with RSP", fidbra(9.5, 3, 0) == 9);
+	report("fidbra(-9.5) == -9 with RSP", fidbra(-9.5, 3, 0) == -9);
+	report("fidbra(2.5) == 3 with RSP", fidbra(2.5, 3, 0) == 3);
+	report("fidbra(-2.5) == -3 with RSP", fidbra(-2.5, 3, 0) == -3);
+	
+	report("fiebra(0.5) == 1 with RSP", fiebra(0.5, 3, 0) == 1);
+	report("fiebra(-0.5) == -1 with RSP", fiebra(-0.5, 3, 0) == -1);
+	report("fiebra(9.5) == 9 with RSP", fiebra(9.5, 3, 0) == 9);
+	report("fiebra(-9.5) == -9 with RSP", fiebra(-9.5, 3, 0) == -9);
+	report("fiebra(2.5) == 3 with RSP", fiebra(2.5, 3, 0) == 3);
+	report("fiebra(-2.5) == -3 with RSP", fiebra(-2.5, 3, 0) == -3);
+	
+	report("fixbra(0.5) == 1 with RSP", fixbra(0.5, 3, 0) == 1);
+	report("fixbra(-0.5) == -1 with RSP", fixbra(-0.5, 3, 0) == -1);
+	report("fixbra(9.5) == 9 with RSP", fixbra(9.5, 3, 0) == 9);
+	report("fixbra(-9.5) == -9 with RSP", fixbra(-9.5, 3, 0) == -9);
+	report("fixbra(2.5) == 3 with RSP", fixbra(2.5, 3, 0) == 3);
+	report("fixbra(-2.5) == -3 with RSP", fixbra(-2.5, 3, 0) == -3);
+}
+
 static void test_pgm_int(void)
 {
 	expect_pgm_int();
@@ -78,6 +149,7 @@ int main(int argc, char**argv)
 	setup_vm();
 
 	test_fp();
+	test_fp_rounding();
 	test_pgm_int();
 	test_malloc();
 

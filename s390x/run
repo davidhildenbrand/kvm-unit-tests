@@ -17,7 +17,7 @@ qemu=$(search_qemu_binary) ||
 
 M='-machine s390-ccw-virtio'
 M+=",accel=$ACCEL"
-command="$qemu -nodefaults -nographic $M"
+command="$qemu -cpu max -nodefaults -nographic $M"
 command+=" -chardev stdio,id=con0 -device sclpconsole,chardev=con0"
 command+=" -kernel"
 command="$(timeout_cmd) $command"
